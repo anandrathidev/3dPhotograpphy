@@ -29,16 +29,53 @@ sgList.append(cv2.imread(imgPath + "sg6.jpg"))
 
 def extractObject(img):
   plt.imshow(img),plt.show()
-  newmask = img
+  gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+  blur1 = cv2.GaussianBlur(img,(7,7),0)
+  #gray=blur1
+  mser = cv2.MSER_create()
+  vis = img.copy()
+  regions = mser.detectRegions(gray)
+  hulls = [cv2.convexHull(p.reshape(-1, 1, 2)) for p in regions[0]]
+  cv2.polylines(vis, hulls, 1, (0,255,0)) 
+  plt.imshow(gray),plt.colorbar(),plt.show()
+  plt.imshow(img),plt.colorbar(),plt.show()
+  plt.imshow(vis),plt.colorbar(),plt.show()
+
+def extractObjectGC(img):
+  img=img.copy()     
+  plt.imshow(img),plt.show()
   mask = np.zeros(img.shape[:2],np.uint8)
+  bgdModel = np.zeros((1,65),np.float64)
+  fgdModel = np.zeros((1,65),np.float64)
+  height, width, _ = img.shape
+  x = int(height * 0.05)
+  y = int(width * 0.05)
+  rect = (x,y, width-y,  height -x)
+  cv2.grabCut(img,mask,rect,bgdModel,fgdModel,150,cv2.GC_INIT_WITH_RECT)
+  mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
+  img = img*mask2[:,:,np.newaxis]
+  plt.imshow(img),plt.colorbar(),plt.show()
+  plt.imshow(mask2),plt.colorbar(),plt.show()
+  return img
+
+def extractObjectGC2(img):
+  img=img.copy()
+  plt.imshow(img),plt.show()
+  # whereever it is marked white (sure foreground), change mask=1
+  # whereever it is marked black (sure background), change mask=0
   mask[newmask == 0] = 0
   mask[newmask == 255] = 1
   mask, bgdModel, fgdModel = cv2.grabCut(img,mask,None,bgdModel,fgdModel,5,cv2.GC_INIT_WITH_MASK)
   mask = np.where((mask==2)|(mask==0),0,1).astype('uint8')
   img = img*mask[:,:,np.newaxis]
-  plt.imshow(img),plt.colorbar(),plt.show()
-  plt.imshow(img),plt.colorbar(),plt.show()
+  plt.imshow(img),plt.colorbar(),plt.show()  plt.imshow(img),plt.colorbar(),plt.show()
+  plt.imshow(mask2),plt.colorbar(),plt.show()
+  return img
 
+
+
+nimg = extractObjectGC(sgList[4])
+extractObject(nimg)
 extractObject(sgList[4])
 
 face_cascade = cv2.CascadeClassifier(imgPath + 'haarcascade_frontalface_default.xml')
